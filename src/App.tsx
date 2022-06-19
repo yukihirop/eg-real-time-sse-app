@@ -44,15 +44,39 @@ function App() {
     setData(newData);
   };
 
+  const removeFlight = (flightInfo: IFlight) => {
+    const newData= data.filter(item => item.flight !== flightInfo.flight)
+    setData(newData)
+  }
+
   const stopUpdates = () => {
     eventSource.close()
   }
 
   React.useEffect(() => {
-    eventSource.onmessage = (e) => {
-      updateFlightState(JSON.parse(e.data));
-    };
-  });
+    const flightStateUpdateEventListener = (e: MessageEvent<any>) => {
+      console.log('flightUpdateState', { e })
+      updateFlightState(JSON.parse(e.data))
+    }
+    const flightRemoveEventListener = (e: MessageEvent<any>) => {
+      console.log('flightRemove', { e })
+      removeFlight(JSON.parse(e.data))
+    }
+    const closedConnectionEventListener = (e: MessageEvent<any>) => {
+      console.log('closedConnection', { e })
+      stopUpdates()
+    }
+    
+    eventSource.addEventListener('flightStateUpdate', flightStateUpdateEventListener)
+    eventSource.addEventListener('flightRemoval', flightRemoveEventListener)
+    eventSource.addEventListener('closedConnection', closedConnectionEventListener)
+
+    return () => {
+      eventSource.removeEventListener('flightStateUpdate', flightStateUpdateEventListener, false)
+      eventSource.removeEventListener('flightRemoval', flightRemoveEventListener, false)
+      eventSource.removeEventListener('closedConnection', closedConnectionEventListener, false)
+    }
+  }, []);
 
   return (
     <>
