@@ -37,3 +37,7 @@ id: 4
 event: closedConnection
 data:
 ```
+
+## Docs
+
+- https://html.spec.whatwg.org/multipage/server-sent-events.html
