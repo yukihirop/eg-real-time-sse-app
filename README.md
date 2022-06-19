@@ -13,7 +13,7 @@ yarn dev
 
 ## client
 
-
+<img width="464" alt="image" src="https://user-images.githubusercontent.com/11146767/174466774-e2dcd2e3-ccdc-457f-9bea-dea3809e3900.png">
 
 ## server
 
