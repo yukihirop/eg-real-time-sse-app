@@ -1,45 +1,86 @@
-import { useState } from 'react'
-import logo from './logo.svg'
-import './App.css'
+import React from "react";
+import { useState } from "react";
+import "./App.css";
+import { getInitialFlightData, IFlight } from "./DataProvider";
+import {
+  createTable,
+  getCoreRowModel,
+  useTableInstance,
+} from "@tanstack/react-table";
+
+const table = createTable().setRowType<IFlight>();
+
+const defaultColumns = [
+  table.createDataColumn("origin", {
+    header: "Origin",
+  }),
+  table.createDataColumn("flight", {
+    header: "Flight",
+  }),
+  table.createDataColumn("arrival", {
+    header: "Arrival",
+  }),
+  table.createDataColumn("state", {
+    header: "State",
+  }),
+];
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [data, setData] = React.useState(getInitialFlightData());
+  const instance = useTableInstance(table, {
+    data,
+    columns: defaultColumns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+  const eventSource = new EventSource("http://localhost:5000/events");
+
+  const updateFlightState = (flightState: IFlight) => {
+    const newData = data.map((item) => {
+      if (item.flight == flightState.flight) {
+        item.state = flightState.state;
+      }
+      return item;
+    });
+    setData(newData);
+  };
+
+  const stopUpdates = () => {
+    eventSource.close()
+  }
+
+  React.useEffect(() => {
+    eventSource.onmessage = (e) => {
+      updateFlightState(JSON.parse(e.data));
+    };
+  });
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>Hello Vite + React!</p>
-        <p>
-          <button type="button" onClick={() => setCount((count) => count + 1)}>
-            count is: {count}
-          </button>
-        </p>
-        <p>
-          Edit <code>App.tsx</code> and save to test HMR updates.
-        </p>
-        <p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-          {' | '}
-          <a
-            className="App-link"
-            href="https://vitejs.dev/guide/features.html"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Vite Docs
-          </a>
-        </p>
-      </header>
-    </div>
-  )
+    <>
+      <table>
+        <thead>
+          {instance.getHeaderGroups().map((headerGroup) => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <th key={header.id} colSpan={header.colSpan}>
+                  {header.isPlaceholder ? null : header.renderHeader()}
+                </th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+        <tbody>
+          {instance.getRowModel().rows.map((row) => (
+            <tr key={row.id}>
+              {row.getVisibleCells().map((cell) => (
+                <td key={cell.id}>{cell.renderCell()}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <button onClick={() => { stopUpdates()}}>stop updates</button>
+    </>
+  );
 }
 
-export default App
+export default App;
